@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>異世界転生シミュレーター（β）</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+
+<body>
+  <div class="wrap">
+    <header class="card">
+      <h1>異世界転生シミュレーター（β）</h1>
+      <p class="muted">
+        「生成！」で年表→要約JSON→AI用プロンプトを作ります。<br>
+        「コピー」でプロンプトをクリップボードへ → ChatGPT/Claude/Gemini に貼って楽しんでね。<br>
+        <span class="warn">※個人情報は入れないでください。</span>
+      </p>
+    </header>
+
+    <main class="grid">
+      <!-- Left: Build -->
+      <section class="card">
+        <div class="row">
+          <div class="label">年数</div>
+          <select id="years" class="select w-180">
+            <option value="10">10年</option>
+            <option value="20">20年</option>
+            <option value="30" selected>30年</option>
+            <option value="40">40年</option>
+          </select>
+        </div>
+
+        <div class="row">
+          <div class="label">トーン</div>
+          <select id="tone" class="select w-220">
+            <option value="ほのぼの" selected>ほのぼの</option>
+            <option value="シリアス">シリアス</option>
+            <option value="コメディ">コメディ</option>
+          </select>
+        </div>
+
+        <div class="row">
+          <div class="label">初期職業</div>
+          <select id="job" class="select">
+            <option value="冒険者" selected>冒険者</option>
+            <option value="農民">農民</option>
+            <option value="鍛冶師">鍛冶師</option>
+            <option value="商人">商人</option>
+            <option value="研究者">研究者</option>
+            <option value="旅人">旅人</option>
+          </select>
+        </div>
+
+        <div class="row">
+          <div class="label">チート（1〜2個）</div>
+        </div>
+        <div class="pill" id="cheats">
+          <label><input type="checkbox" value="無限成長">無限成長</label>
+          <label><input type="checkbox" value="死に戻り">死に戻り（1回）</label>
+          <label><input type="checkbox" value="ドロップ倍率MAX">ドロップ倍率MAX</label>
+          <label><input type="checkbox" value="スキルコピー">スキルコピー</label>
+          <label><input type="checkbox" value="建築補正">建築補正（村づくり強化）</label>
+          <label><input type="checkbox" value="ダメージ半減">ダメージ半減</label>
+        </div>
+        <div id="cheatMsg" class="small"></div>
+
+        <div class="row mt-14">
+          <div class="label">ステータス（合計 <span id="totalTarget">100</span>）</div>
+          <div class="num mono"><span id="totalNow">100</span></div>
+        </div>
+
+        <div id="stats"></div>
+
+        <div class="btns">
+          <button class="primary" id="btnGenerate">生成！</button>
+          <button class="secondary" id="btnCopy" disabled>コピー</button>
+          <button class="ghost" id="btnReroll">seed変更</button>
+        </div>
+
+        <div class="footer">
+          seed: <span class="mono" id="seedView">-</span>
+          <span class="small">（seedが同じなら結果は再現されます）</span>
+        </div>
+      </section>
+
+      <!-- Right: Output -->
+      <section class="card">
+        <div class="kpi">
+          <div class="box"><div class="small">最終Lv</div><b id="kLv">-</b></div>
+          <div class="box"><div class="small">称号</div><b id="kTitle">-</b></div>
+          <div class="box"><div class="small">資産</div><b id="kGold">-</b></div>
+          <div class="box"><div class="small">死に戻り</div><b id="kRewind">-</b></div>
+        </div>
+
+        <details class="mt-12" open>
+          <summary>AIに貼る用（完成プロンプト）</summary>
+          <div class="small mt-8">これを丸ごとコピーしてAIに貼り付けてください。</div>
+          <textarea id="promptBox" spellcheck="false"></textarea>
+          <div id="copyMsg" class="small mt-8"></div>
+        </details>
+
+        <details class="mt-12">
+          <summary>重要イベント（最大10件）</summary>
+          <pre id="hiBox" class="mono">-</pre>
+        </details>
+
+        <details class="mt-12">
+          <summary>年表（全ログ）</summary>
+          <pre id="timelineBox" class="mono">-</pre>
+        </details>
+
+
+        <div class="sitefoot">
+          <span id="verView" class="mono"></span>
+          <span>© <span id="yearNow"></span> Fuchs / 日々綴</span>
+          <span>Repo: github.com/Fuchs-R/IsekaiSimu</span>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="./app.js"></script>
+</body>
+</html>
