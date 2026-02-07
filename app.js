@@ -236,6 +236,31 @@
     const years = build.years;
     const has = (c) => build.cheats.includes(c);
 
+    // ---- Tier (early/mid/late) ----
+    // Tier: 1=序盤, 2=中盤, 3=終盤
+    function tierForYear(y, totalYears) {
+      const t = y / totalYears; // 0..1
+      if (totalYears <= 10) {
+        if (t <= 0.6) return 1;
+        if (t <= 0.9) return 2;
+        return 3;
+      }
+      if (totalYears <= 20) {
+        if (t <= 0.35) return 1;
+        if (t <= 0.75) return 2;
+        return 3;
+      }
+      if (totalYears <= 30) {
+        if (t <= 0.30) return 1;
+        if (t <= 0.70) return 2;
+        return 3;
+      }
+      // 40年想定
+      if (t <= 0.25) return 1;
+      if (t <= 0.65) return 2;
+      return 3;
+    }
+
     function gainStat() {
       const keys = ["STR", "MAG", "DEX", "INT", "VIT", "LUK"];
       const jobBias = {
@@ -337,20 +362,38 @@
     }
 
     for (let y = 1; y <= years; y++) {
+      const tier = tierForYear(y, years);
       let poolChoices = [];
-      poolChoices.push({ k: "adventure", w: build.job === "冒険者" ? 1.25 : 1.0 });
-      poolChoices.push({ k: "life", w: (build.job === "農民" || build.job === "鍛冶師") ? 1.25 : 1.0 });
-      poolChoices.push({ k: "relations", w: 0.85 });
-      poolChoices.push({ k: "disaster", w: 0.35 });
+
+      // Base pool weights by tier (keeps 1年=1イベントのまま展開に差を出す)
+      const tierBias = (
+        tier === 1 ? { adventure: 0.95, life: 1.20, relations: 0.90, disaster: 0.20 } :
+        tier === 2 ? { adventure: 1.05, life: 1.00, relations: 0.90, disaster: 0.35 } :
+                     { adventure: 1.20, life: 0.90, relations: 0.85, disaster: 0.55 }
+      );
+
+      poolChoices.push({ k: "adventure", w: (build.job === "冒険者" ? 1.25 : 1.0) * tierBias.adventure });
+      poolChoices.push({ k: "life", w: ((build.job === "農民" || build.job === "鍛冶師") ? 1.25 : 1.0) * tierBias.life });
+      poolChoices.push({ k: "relations", w: 0.85 * tierBias.relations });
+      poolChoices.push({ k: "disaster", w: 0.35 * tierBias.disaster });
       if (has("建築補正")) poolChoices = poolChoices.map(p => p.k === "life" ? { ...p, w: p.w + 0.25 } : p);
-      if (y > Math.floor(years * 0.65)) poolChoices = poolChoices.map(p => p.k === "adventure" ? { ...p, w: p.w + 0.15 } : p);
 
       const poolSum = poolChoices.reduce((a, b) => a + b.w, 0);
       let r = rng() * poolSum;
       let poolKey = "adventure";
       for (const p of poolChoices) { r -= p.w; if (r <= 0) { poolKey = p.k; break; } }
 
-      const ev = weightedPick(rng, EVENT_POOLS[poolKey]);
+      // Tier filter (events may define tier as number or array). If missing, it's treated as [1,2,3].
+      const poolAll = EVENT_POOLS[poolKey] || [];
+      const poolTiered = poolAll.filter(it => {
+        const t = it.tier;
+        if (t == null) return true;
+        if (Array.isArray(t)) return t.includes(tier);
+        return t === tier;
+      });
+      const poolUse = poolTiered.length ? poolTiered : poolAll;
+
+      const ev = weightedPick(rng, poolUse);
       const pSuccess = calcSuccess(ev);
       const success = rng() < pSuccess;
 
