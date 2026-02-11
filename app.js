@@ -71,6 +71,8 @@
     years: document.getElementById("years"),
     tone: document.getElementById("tone"),
     job: document.getElementById("job"),
+    xMode: document.getElementById("xMode"),
+    xTag: document.getElementById("xTag"),
     cheats: document.getElementById("cheats"),
     cheatMsg: document.getElementById("cheatMsg"),
     btnGenerate: document.getElementById("btnGenerate"),
@@ -563,14 +565,40 @@ if (ev && ev.name) {
       tags: sim.tags
     };
 
+    const rules = [
+      "1) まず短編（400〜600字）。転生→成長→結末まで。トーンは build.tone に合わせる。",
+      "2) 次に「年表ダイジェスト」5行（箇条書き）。",
+      "3) 最後に「今回のビルド評価」：強み2行／弱み2行。",
+      "4) 固有名詞は過度に増やさず、JSONの要素を尊重する。盛りすぎない。",
+    ];
+
+    if (build.x_mode) {
+      rules.push(
+        "5) 最後に「X投稿用（140文字以内）」を1本だけ出力してください。",
+        "   - 140文字以内（改行は最大2回まで）",
+        "   - レポート調は禁止（例：Lv○○、資産○○ などの列挙は禁止）",
+        "   - 数値の羅列は禁止（必要なら1つまで、自然な文中のみ）",
+        "   - JSONの重要イベントから「転機となる場面」を1つだけ抽出する",
+        "   - 成果の説明ではなく「情景」「余韻」「一場面」を描く",
+        "   - あらすじ説明は禁止",
+        "   - 情報整理ではなく、短編小説の断章にする"
+      );
+
+      if (build.x_tag) {
+        rules.push(
+          "   - xTag=ON の場合、可能なら末尾に #IsekaiSimu を1つ付ける",
+          "   - ただし140字に収まらない場合はタグを削除してよい"
+        );
+      } else {
+        rules.push("   - ハッシュタグは付けない");
+      }
+    }
+
     const instruction =
 `以下のJSONをもとに、異世界転生の物語を生成してください。
 
 【出力ルール】
-1) まず短編（400〜600字）。転生→成長→結末まで。トーンは build.tone に合わせる。
-2) 次に「年表ダイジェスト」5行（箇条書き）。
-3) 最後に「今回のビルド評価」：強み2行／弱み2行。
-4) 固有名詞は過度に増やさず、JSONの要素を尊重する。盛りすぎない。
+${rules.join("\n")}
 
 【入力JSON】`;
 
@@ -621,6 +649,8 @@ if (ev && ev.name) {
       years: parseInt(els.years.value, 10),
       tone: els.tone.value,
       job: els.job.value,
+      x_mode: !!(els.xMode && els.xMode.checked),
+      x_tag: !!(els.xTag && els.xTag.checked),
       cheats: getSelectedCheats(),
       stats: { ...statState },
     };
@@ -644,6 +674,11 @@ if (ev && ev.name) {
     if (window.innerWidth < 860) {
       els.promptBox.scrollIntoView({ behavior: "smooth", block: "start" });
     }
+  }
+
+  function syncXTagAvailability() {
+    if (!els.xMode || !els.xTag) return;
+    els.xTag.disabled = !els.xMode.checked;
   }
 
   // ---- Events wiring ----
@@ -670,8 +705,13 @@ if (ev && ev.name) {
     els.copyMsg.textContent = "seedを変更しました（生成結果が変わります）";
   });
 
+  if (els.xMode) {
+    els.xMode.addEventListener("change", syncXTagAvailability);
+  }
+
   // ---- Init ----
   setSeed(seed);
   renderStats();
+  syncXTagAvailability();
   els.cheatMsg.textContent = "（未選択でもOK。選ぶなら最大2つ）";
 })();
