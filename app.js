@@ -586,7 +586,7 @@ if (ev && ev.name) {
 
       if (build.x_tag) {
         rules.push(
-          "   - 可能なら末尾に #IsekaiSimu を1つ付ける",
+          "   - xTag=ON の場合、可能なら末尾に #IsekaiSimu を1つ付ける",
           "   - ただし140字に収まらない場合はタグを削除してよい"
         );
       } else {
