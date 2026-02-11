@@ -15,7 +15,7 @@
 (function () {
   // ---- Project constants ----
   const GENERATOR_NAME = "IsekaiSimu";
-  const VERSION = "0.1-beta";
+  const VERSION = "0.2-beta";
   const AUTHOR = "Fuchs";
   const SITE_URL = "https://day-2-day.info/isekai/";
   const REPO_URL = "https://github.com/Fuchs-R/IsekaiSimu";
@@ -204,15 +204,51 @@
   }
 
 
-  function weightedPick(rng, items) {
-    const sum = items.reduce((a, b) => a + b.w, 0);
-    let r = rng() * sum;
-    for (const it of items) {
-      r -= it.w;
-      if (r <= 0) return it;
-    }
-    return items[items.length - 1];
+  
+// ---- Anti-repeat decay (recent events are less likely to repeat) ----
+// Window size (how many past years to consider)
+const RECENT_EVENT_WINDOW = 4;
+// Decay multipliers by recency (most recent first)
+// Example: last year 5%, 2 years ago 15%, 3 years ago 35%, 4 years ago 60%
+const RECENT_EVENT_DECAY = [0.05, 0.15, 0.35, 0.60];
+
+function effectiveWeight(baseW, recencyIndex) {
+  if (recencyIndex == null) return baseW;
+  const m = RECENT_EVENT_DECAY[Math.min(recencyIndex, RECENT_EVENT_DECAY.length - 1)];
+  return baseW * m;
+}
+
+function findRecencyIndex(recentNames, name) {
+  // recentNames is oldest->newest (queue). Return 0 for most recent, 1 for 2nd most recent...
+  for (let i = recentNames.length - 1, k = 0; i >= 0; i--, k++) {
+    if (recentNames[i] === name) return k;
   }
+  return null;
+}
+
+function weightedPick(rng, items, recentNames) {
+  if (!items || items.length === 0) return null;
+
+  // If pool is too small, don't over-decay (avoids "nothing feels selectable")
+  const useDecay = Array.isArray(recentNames) && recentNames.length > 0 && items.length >= 6;
+
+  let sum = 0;
+  for (const it of items) {
+    const baseW = (typeof it.w === "number" ? it.w : 1);
+    if (!useDecay) { sum += baseW; continue; }
+    const rec = findRecencyIndex(recentNames, it.name);
+    sum += effectiveWeight(baseW, rec);
+  }
+
+  let r = rng() * sum;
+  for (const it of items) {
+    const baseW = (typeof it.w === "number" ? it.w : 1);
+    const w = useDecay ? effectiveWeight(baseW, findRecencyIndex(recentNames, it.name)) : baseW;
+    r -= w;
+    if (r <= 0) return it;
+  }
+  return items[items.length - 1];
+}
 
   function scoreFor(stats, keys) {
     const v = keys.map(k => stats[k] || 0);
@@ -232,6 +268,9 @@
 
     const timeline = [];
     const highlights = [];
+
+    // Recent event names (for anti-repeat decay)
+    const recentEvents = [];
 
     const years = build.years;
     const has = (c) => build.cheats.includes(c);
@@ -393,7 +432,15 @@
       });
       const poolUse = poolTiered.length ? poolTiered : poolAll;
 
-      const ev = weightedPick(rng, poolUse);
+      const ev = weightedPick(rng, poolUse, recentEvents);
+// Update recent queue (oldest->newest)
+if (ev && ev.name) {
+  recentEvents.push(ev.name);
+  if (recentEvents.length > RECENT_EVENT_WINDOW) recentEvents.shift();
+}
+
+      if (!ev) { timeline.push(`${y}年目：イベント選択失敗（データ不足）`); continue; }
+
       const pSuccess = calcSuccess(ev);
       const success = rng() < pSuccess;
 

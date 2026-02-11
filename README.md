@@ -1,56 +1,103 @@
 # IsekaiSimu — 異世界転生シミュレーター（β）
 
-**「計算機が導き出す不条理（データ）」を「AIが紡ぐ物語（ナラティブ）」へ。**
-
-## 📝 概要
-
-`IsekaiSimu` は、ブラウザ上で30年分の「異世界転生年表」と「結果データ（JSON）」を生成するシミュレーターです。
-
-このツールの目的は、**数値シミュレーションによる「厳密な運命」と、AIによる「柔軟な物語生成」を分離すること**にあります。AIに展開を丸投げするのではなく、JSが算出した「成功・失敗」のデータを設計図としてAIに渡すことで、より緊張感と意外性のある異世界体験を創出します。
-
-## 🛡️ オリジン（制作の背景）
-
-本プロジェクトは、2005年から20年以上更新を続けている個人サイト「[日々綴（Hibi Tsuzuri）](https://day-2-day.info/)」の管理人 **Fuchs** によって制作されました。
-
-かつてのCGI全盛期に親しんだ「数値結果を読み解く楽しさ」を、現代のLLM（ChatGPT, Claude, Geminiなど）と融合させるための実験的プロトコルです。
-
-## ✨ 特徴
-
-* **Pure Front-end**: HTML/JS/CSSのみ。サーバー不要で動作します。
-* **Data Driven**: 30年分のイベントをダイスロール（乱数）で確定させます。
-* **Reproducibility**: `seed` 値により、同じ運命の再現・共有が可能です。
-* **Provenance**: 出力JSONには `meta` タグが付与され、本シミュレーターの出力であることを証明します。
-
-## 🚀 使い方
-
-1. `index.html` をブラウザで開く。
-2. ステータス・職業・チートを選択（またはランダム生成）。
-3. **「生成！」** をクリックし、30年の人生を算出。
-4. **「JSONをコピー」** をクリック。
-5. お好みのAI（ChatGPT等）に、以下の「AI用プロンプト」と一緒に貼り付ける。
-
+**「計算機が導き出す運命（データ）」を、AIが紡ぐ物語（ナラティブ）へ。**
 
 ---
 
-## 📊 出力データの構造（Meta）
+## 🧭 概要
 
-本ツールが吐き出すJSONには、オリジナリティ保持のためのメタデータが含まれます。
+**IsekaiSimu** は、ブラウザ上で異世界転生後の人生を  
+**年表＋結果JSON**として生成するフロントエンド完結型シミュレーターです。
+
+本ツールは、物語生成をAIに丸投げせず、  
+JavaScriptによって確定した「成功・失敗・成長」の履歴を  
+**物語生成AIの入力素材**として提供することを目的としています。
+
+---
+
+## 🎯 コンセプト
+
+- シミュレーションは **完全にJavaScript側で確定**
+- AIは「解釈と物語化」のみを担当
+- seed による再現性を最優先
+- 出力JSONに `meta` を付与し、生成物の出自を保証
+
+---
+
+## ✨ 主な特徴
+
+- **Pure Front-end**
+  - HTML / CSS / JavaScript のみ
+  - 外部API・サーバー不要
+- **Data Driven**
+  - 1年＝1イベントの年表生成
+  - 成功率・死亡・資産増減を数値で判定
+- **Tier System**
+  - 序盤 / 中盤 / 終盤でイベント内容が自然に変化
+- **Anti-Repeat Decay**
+  - 直近イベントの被りを抑制
+- **Reproducibility**
+  - seed が同じなら結果は完全再現
+- **AI Friendly**
+  - ChatGPT / Claude / Gemini への貼り付け前提設計
+
+---
+
+## 🕹️ 使い方
+
+1. `index.html` をブラウザで開く
+2. 年数・職業・ステータス・チートを選択
+3. **「生成！」** をクリック
+4. 表示された **完成プロンプト** をコピー
+5. お好みのAIに貼り付けて物語化
+
+---
+
+## 📦 出力データ（JSON）
+
+生成されるJSONには、以下の `meta` 情報が必ず含まれます。
 
 ```json
-"meta": {
-  "generator": "IsekaiSimu / Hibi-Tsuzuri Archives",
-  "version": "0.1-beta",
-  "author": "Fuchs",
-  "site": "https://day-2-day.info/",
-  "repo": "https://github.com/Fuchs-R/IsekaiSimu",
-  "license": "MIT"
+{
+  "meta": {
+    "generator": "IsekaiSimu",
+    "version": "0.2-beta",
+    "author": "Fuchs",
+    "license": "MIT",
+    "site": "https://day-2-day.info/isekai/",
+    "repo": "https://github.com/Fuchs/IsekaiSimu",
+    "generated_at": "ISO8601",
+    "build_id": "fnv1a-hash"
+  }
 }
-
 ```
 
-## 📄 ライセンス
+---
 
-**MIT License**
-Copyright (c) 2026 Fuchs / 日々綴(Hibi-Tsuzuri)  
+## 🗂️ ファイル構成
 
-商用・改変・再配布は自由ですが、著作権表示の維持をお願いします。
+```
+/isekai/
+├ index.html   # UI
+├ style.css    # スタイル
+├ events.js    # イベント定義（データのみ）
+└ app.js       # シミュレーションロジック
+```
+
+---
+
+## 📜 ライセンス
+
+MIT License  
+Copyright (c) 2026 Fuchs / 日々綴  
+
+商用・改変・再配布は自由ですが、  
+著作権表示およびライセンス表記は保持してください。
+
+---
+
+## 🔗 Links
+
+- Web: https://day-2-day.info/isekai/
+- Terms: https://day-2-day.info/isekai-terms/
+- GitHub: https://github.com/Fuchs/IsekaiSimu
