@@ -15,7 +15,7 @@
 (function () {
   // ---- Project constants ----
   const GENERATOR_NAME = "IsekaiSimu";
-  const VERSION = "0.1-beta";
+  const VERSION = "0.2-beta";
   const AUTHOR = "Fuchs";
   const SITE_URL = "https://day-2-day.info/isekai/";
   const REPO_URL = "https://github.com/Fuchs-R/IsekaiSimu";
@@ -196,45 +196,59 @@
   });
 
   // ---- Events (same as prototype) ----
-  const EVENT_POOLS = {
-    adventure: [
-      { name: "スライム討伐", w: 1.0, test: ["STR", "VIT", "LUK"], gain: { xp: [20, 60], gold: [5, 25] } },
-      { name: "ダンジョン探索", w: 0.9, test: ["DEX", "VIT", "LUK"], gain: { xp: [40, 90], gold: [10, 60] } },
-      { name: "盗賊団の襲撃", w: 0.7, test: ["STR", "DEX", "LUK"], gain: { xp: [30, 80], gold: [0, 40] } },
-      { name: "魔物の群れ", w: 0.6, test: ["STR", "VIT", "MAG"], gain: { xp: [60, 120], gold: [10, 50] } },
-      { name: "ドラゴン遭遇", w: 0.25, test: ["MAG", "VIT", "LUK"], gain: { xp: [120, 220], gold: [40, 120] } },
-      { name: "魔王軍の斥候と交戦", w: 0.35, test: ["STR", "MAG", "VIT"], gain: { xp: [90, 180], gold: [20, 80] } },
-    ],
-    life: [
-      { name: "畑の開墾", w: 0.9, test: ["VIT", "DEX", "INT"], gain: { xp: [20, 60], gold: [5, 20] } },
-      { name: "鍛冶修行", w: 0.8, test: ["DEX", "VIT", "INT"], gain: { xp: [30, 80], gold: [5, 35] } },
-      { name: "交易で稼ぐ", w: 0.8, test: ["INT", "LUK", "DEX"], gain: { xp: [20, 60], gold: [20, 90] } },
-      { name: "村の運営を手伝う", w: 0.75, test: ["INT", "DEX", "LUK"], gain: { xp: [20, 60], gold: [5, 25] } },
-      { name: "小さな拠点を建築", w: 0.5, test: ["DEX", "INT", "VIT"], gain: { xp: [50, 110], gold: [-10, 30] } },
-      { name: "研究成果が出る", w: 0.55, test: ["INT", "MAG", "LUK"], gain: { xp: [40, 120], gold: [0, 40] } },
-    ],
-    relations: [
-      { name: "良き仲間と出会う", w: 0.65, test: ["LUK", "INT", "DEX"], gain: { xp: [10, 40], gold: [0, 15] } },
-      { name: "師匠に鍛えられる", w: 0.5, test: ["VIT", "INT", "STR"], gain: { xp: [60, 130], gold: [0, 0] } },
-      { name: "裏切りに遭う", w: 0.25, test: ["LUK", "INT", "DEX"], gain: { xp: [0, 30], gold: [-40, -5] } },
-      { name: "王国の依頼を受ける", w: 0.35, test: ["INT", "STR", "MAG"], gain: { xp: [80, 160], gold: [30, 120] } },
-    ],
-    disaster: [
-      { name: "疫病の流行", w: 0.25, test: ["INT", "VIT", "LUK"], gain: { xp: [0, 40], gold: [-60, -10] } },
-      { name: "大洪水", w: 0.2, test: ["INT", "VIT", "DEX"], gain: { xp: [0, 50], gold: [-80, -20] } },
-      { name: "戦争に巻き込まれる", w: 0.3, test: ["STR", "VIT", "INT"], gain: { xp: [60, 150], gold: [-30, 40] } },
-    ],
-  };
+  const EVENT_POOLS =
+    (window.IsekaiSimuData && window.IsekaiSimuData.EVENT_POOLS) || null;
 
-  function weightedPick(rng, items) {
-    const sum = items.reduce((a, b) => a + b.w, 0);
-    let r = rng() * sum;
-    for (const it of items) {
-      r -= it.w;
-      if (r <= 0) return it;
-    }
-    return items[items.length - 1];
+  if (!EVENT_POOLS) {
+    console.error("[IsekaiSimu] EVENT_POOLS is not loaded. Load events.js before app.js.");
   }
+
+
+  
+// ---- Anti-repeat decay (recent events are less likely to repeat) ----
+// Window size (how many past years to consider)
+const RECENT_EVENT_WINDOW = 4;
+// Decay multipliers by recency (most recent first)
+// Example: last year 5%, 2 years ago 15%, 3 years ago 35%, 4 years ago 60%
+const RECENT_EVENT_DECAY = [0.05, 0.15, 0.35, 0.60];
+
+function effectiveWeight(baseW, recencyIndex) {
+  if (recencyIndex == null) return baseW;
+  const m = RECENT_EVENT_DECAY[Math.min(recencyIndex, RECENT_EVENT_DECAY.length - 1)];
+  return baseW * m;
+}
+
+function findRecencyIndex(recentNames, name) {
+  // recentNames is oldest->newest (queue). Return 0 for most recent, 1 for 2nd most recent...
+  for (let i = recentNames.length - 1, k = 0; i >= 0; i--, k++) {
+    if (recentNames[i] === name) return k;
+  }
+  return null;
+}
+
+function weightedPick(rng, items, recentNames) {
+  if (!items || items.length === 0) return null;
+
+  // If pool is too small, don't over-decay (avoids "nothing feels selectable")
+  const useDecay = Array.isArray(recentNames) && recentNames.length > 0 && items.length >= 6;
+
+  let sum = 0;
+  for (const it of items) {
+    const baseW = (typeof it.w === "number" ? it.w : 1);
+    if (!useDecay) { sum += baseW; continue; }
+    const rec = findRecencyIndex(recentNames, it.name);
+    sum += effectiveWeight(baseW, rec);
+  }
+
+  let r = rng() * sum;
+  for (const it of items) {
+    const baseW = (typeof it.w === "number" ? it.w : 1);
+    const w = useDecay ? effectiveWeight(baseW, findRecencyIndex(recentNames, it.name)) : baseW;
+    r -= w;
+    if (r <= 0) return it;
+  }
+  return items[items.length - 1];
+}
 
   function scoreFor(stats, keys) {
     const v = keys.map(k => stats[k] || 0);
@@ -255,8 +269,36 @@
     const timeline = [];
     const highlights = [];
 
+    // Recent event names (for anti-repeat decay)
+    const recentEvents = [];
+
     const years = build.years;
     const has = (c) => build.cheats.includes(c);
+
+    // ---- Tier (early/mid/late) ----
+    // Tier: 1=序盤, 2=中盤, 3=終盤
+    function tierForYear(y, totalYears) {
+      const t = y / totalYears; // 0..1
+      if (totalYears <= 10) {
+        if (t <= 0.6) return 1;
+        if (t <= 0.9) return 2;
+        return 3;
+      }
+      if (totalYears <= 20) {
+        if (t <= 0.35) return 1;
+        if (t <= 0.75) return 2;
+        return 3;
+      }
+      if (totalYears <= 30) {
+        if (t <= 0.30) return 1;
+        if (t <= 0.70) return 2;
+        return 3;
+      }
+      // 40年想定
+      if (t <= 0.25) return 1;
+      if (t <= 0.65) return 2;
+      return 3;
+    }
 
     function gainStat() {
       const keys = ["STR", "MAG", "DEX", "INT", "VIT", "LUK"];
@@ -359,20 +401,46 @@
     }
 
     for (let y = 1; y <= years; y++) {
+      const tier = tierForYear(y, years);
       let poolChoices = [];
-      poolChoices.push({ k: "adventure", w: build.job === "冒険者" ? 1.25 : 1.0 });
-      poolChoices.push({ k: "life", w: (build.job === "農民" || build.job === "鍛冶師") ? 1.25 : 1.0 });
-      poolChoices.push({ k: "relations", w: 0.85 });
-      poolChoices.push({ k: "disaster", w: 0.35 });
+
+      // Base pool weights by tier (keeps 1年=1イベントのまま展開に差を出す)
+      const tierBias = (
+        tier === 1 ? { adventure: 0.95, life: 1.20, relations: 0.90, disaster: 0.20 } :
+        tier === 2 ? { adventure: 1.05, life: 1.00, relations: 0.90, disaster: 0.35 } :
+                     { adventure: 1.20, life: 0.90, relations: 0.85, disaster: 0.55 }
+      );
+
+      poolChoices.push({ k: "adventure", w: (build.job === "冒険者" ? 1.25 : 1.0) * tierBias.adventure });
+      poolChoices.push({ k: "life", w: ((build.job === "農民" || build.job === "鍛冶師") ? 1.25 : 1.0) * tierBias.life });
+      poolChoices.push({ k: "relations", w: 0.85 * tierBias.relations });
+      poolChoices.push({ k: "disaster", w: 0.35 * tierBias.disaster });
       if (has("建築補正")) poolChoices = poolChoices.map(p => p.k === "life" ? { ...p, w: p.w + 0.25 } : p);
-      if (y > Math.floor(years * 0.65)) poolChoices = poolChoices.map(p => p.k === "adventure" ? { ...p, w: p.w + 0.15 } : p);
 
       const poolSum = poolChoices.reduce((a, b) => a + b.w, 0);
       let r = rng() * poolSum;
       let poolKey = "adventure";
       for (const p of poolChoices) { r -= p.w; if (r <= 0) { poolKey = p.k; break; } }
 
-      const ev = weightedPick(rng, EVENT_POOLS[poolKey]);
+      // Tier filter (events may define tier as number or array). If missing, it's treated as [1,2,3].
+      const poolAll = EVENT_POOLS[poolKey] || [];
+      const poolTiered = poolAll.filter(it => {
+        const t = it.tier;
+        if (t == null) return true;
+        if (Array.isArray(t)) return t.includes(tier);
+        return t === tier;
+      });
+      const poolUse = poolTiered.length ? poolTiered : poolAll;
+
+      const ev = weightedPick(rng, poolUse, recentEvents);
+// Update recent queue (oldest->newest)
+if (ev && ev.name) {
+  recentEvents.push(ev.name);
+  if (recentEvents.length > RECENT_EVENT_WINDOW) recentEvents.shift();
+}
+
+      if (!ev) { timeline.push(`${y}年目：イベント選択失敗（データ不足）`); continue; }
+
       const pSuccess = calcSuccess(ev);
       const success = rng() < pSuccess;
 
