@@ -34,6 +34,11 @@ IsekaiSimu はブラウザだけで動作する異世界転生シミュレータ
   - year / eventId / name / impact / outcomeKey / emotion / tags / micro / gain
 - X用140字指示を素材駆動化
   - 転機イベント優先、micro/emotion/tags 由来で情景を作る
+- Xコメディ強化（tone_bias/comedy tone で分岐）
+  - 「状況→ズレ→オチ」構成、余韻締め禁止、140字圧縮ガイドを追加
+  - `comedy_level`（0〜3、既定2）でオチ強度・メタ許可を調整
+- イベントに任意のコメディ素材を追加
+  - `humor`（0〜3） / `gag`（ネタ種） / `punch`（ツッコミ種）
 
 ## 使い方
 
