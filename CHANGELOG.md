@@ -1,36 +1,25 @@
 # IsekaiSimu — 更新履歴（CHANGELOG）
 
----
-
-## v0.2-beta（予定）
+## v0.3-beta
 ### Added
-- Tier制（序盤 / 中盤 / 終盤）によるイベント制御
-- イベントカテゴリごとの出現バイアス調整
-- 被り減衰ロジック（直近4年分）
-- events.js / app.js の責務分離
-- build_id の安定化（generated_at 除外）
-- 完成プロンプト向けオプションを追加
-  - `X用（140字）も出力する`（xMode）
-  - `#IsekaiSimu を付ける`（xTag）
-  - xMode OFF 時は xTag を無効化
+- 全イベントを 0.3 スキーマ化（id / emotion / impact / tags / outcomes / flags / micro）
+- outcome 5段階判定（fatal_failure, failure, success, great_success, costly_success）
+- build.gender（male / female / nonbinary）
+- 職業4種追加（dungeon_cleaner, isekai_convenience_clerk, self_proclaimed_strategist, wandering_bard）
+- highlights を AI 素材向け項目で拡張（eventId, outcomeKey, emotion, tags, micro, gain）
 
 ### Changed
-- 出力JSON構造を整理し、meta情報を強化
-- UI文言・導線をAI貼り付け前提に調整
-- X投稿（140字）ルールを「数値報告型」から「マイクロ短編断章」方針へ修正
-  - レポート調・数値羅列を抑制
-  - 重要イベントから転機となる一場面を抽出
-  - 情景・余韻重視、あらすじ説明を禁止
+- VERSION を 0.3-beta に更新
+- 被り減衰を name 基準から id 基準へ移行
+- 軽量因果 flags（requiresFlag AND / setsFlag）をシミュレーションへ導入
+- 特殊処理（仲間/拠点/王国依頼）を id 判定に移行
+- X 140字向け指示を転機+micro 素材優先の方針に更新
 
 ### Notes
-- 本バージョンより開発フェーズを v0.2-beta とする
+- v0.2-beta の思想（AIは物語化のみ・API連携なし）を継承
 
----
+## v0.2-beta
+- Tier制・被り減衰・データ分離・X投稿オプションを導入
 
-## v0.1-beta（2026-02-06）
-### Added
-- 異世界転生シミュレーター β版 初公開
-- ステータス配分・職業・チート選択
-- 年表生成・重要イベント抽出
-- 完成プロンプト生成・コピー機能
-- seed 再現性
+## v0.1-beta
+- β版初公開

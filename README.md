@@ -2,113 +2,46 @@
 
 **「計算機が導き出す運命（データ）」を、AIが紡ぐ物語（ナラティブ）へ。**
 
----
+## 概要
 
-## 🧭 概要
+IsekaiSimu はブラウザだけで動作する異世界転生シミュレーターです。  
+シミュレーション結果（JSON）をAIに渡し、AIは物語化のみを担当します。API連携は行いません。
 
-**IsekaiSimu** は、ブラウザ上で異世界転生後の人生を  
-**年表＋結果JSON**として生成するフロントエンド完結型シミュレーターです。
+## v0.3-beta の要点
 
-本ツールは、物語生成をAIに丸投げせず、  
-JavaScriptによって確定した「成功・失敗・成長」の履歴を  
-**物語生成AIの入力素材**として提供することを目的としています。
+- `events.js` を 0.3 スキーマへ統一
+  - 全イベントに安定 `id`
+  - `emotion` / `impact` / `tags`
+  - `outcomes` 5段階（fatal_failure / failure / success / great_success / costly_success）
+  - 軽量因果 `requiresFlag` / `setsFlag`
+  - 転機イベントの `micro` 素材
+- `app.js` を 0.3 ロジックへ更新
+  - バージョン更新: `0.3-beta`
+  - 被り減衰の主キーを `name` から `id` へ移行
+  - 成否判定を `outcomeKey` 化
+  - `build.flags` 導入（AND条件の requiresFlag を適用）
+  - 特殊処理（仲間追加 / 拠点 / 王国依頼）を id 参照へ移行
+- build に `gender` を導入（male / female / nonbinary）
+  - 能力値・成功率には影響なし
+  - 物語生成時の呼称/関係描写向け素材として出力
+- 職業を +4 追加
+  - dungeon_cleaner（ダンジョン清掃員）
+  - isekai_convenience_clerk（異世界コンビニ店員）
+  - self_proclaimed_strategist（村の自称軍師）
+  - wandering_bard（放浪詩人）
+  - 各職業に `tone_bias` / 軽微な `event_bias` を付与
+- highlights 出力を AI 素材向けに強化
+  - year / eventId / name / impact / outcomeKey / emotion / tags / micro / gain
+- X用140字指示を素材駆動化
+  - 転機イベント優先、micro/emotion/tags 由来で情景を作る
 
----
-
-## 🎯 コンセプト
-
-- シミュレーションは **完全にJavaScript側で確定**
-- AIは「解釈と物語化」のみを担当
-- seed による再現性を最優先
-- 出力JSONに `meta` を付与し、生成物の出自を保証
-
----
-
-## ✨ 主な特徴
-
-- **Pure Front-end**
-  - HTML / CSS / JavaScript のみ
-  - 外部API・サーバー不要
-- **Data Driven**
-  - 1年＝1イベントの年表生成
-  - 成功率・死亡・資産増減を数値で判定
-- **Tier System**
-  - 序盤 / 中盤 / 終盤でイベント内容が自然に変化
-- **Anti-Repeat Decay**
-  - 直近イベントの被りを抑制
-- **Reproducibility**
-  - seed が同じなら結果は完全再現
-- **AI Friendly**
-  - ChatGPT / Claude / Gemini への貼り付け前提設計
-  - 完成プロンプトに **X投稿用（140文字以内）** の追加指示を任意で付与可能
-  - X投稿は「結果報告」ではなく、重要イベント由来の **マイクロ短編断章** を生成する方針
-
----
-
-## 🕹️ 使い方
+## 使い方
 
 1. `index.html` をブラウザで開く
-2. 年数・職業・ステータス・チートを選択
-   - 必要に応じて「X用（140字）も出力する」「#IsekaiSimu を付ける」を設定
-3. **「生成！」** をクリック
-4. 表示された **完成プロンプト** をコピー
-5. お好みのAIに貼り付けて物語化
+2. 年数・トーン・職業・性別・ステータス・チートを設定
+3. 「生成！」で JSON 含みの完成プロンプトを作成
+4. 「コピー」でAIへ貼り付け
 
-### X投稿オプションについて
+## ライセンス
 
-- `X用（140字）も出力する` が ON のとき、完成プロンプトの出力ルール末尾に
-  `X投稿用（140文字以内）` のセクション生成指示が追加されます。
-- このセクションは、JSONの重要イベントから転機を1つ選び、
-  **情景・余韻・一場面**を描く短文（マイクロ短編）を出力するための指示です。
-- `#IsekaiSimu を付ける` は任意で、140文字制限を優先します。
-
----
-
-## 📦 出力データ（JSON）
-
-生成されるJSONには、以下の `meta` 情報が必ず含まれます。
-
-```json
-{
-  "meta": {
-    "generator": "IsekaiSimu",
-    "version": "0.2-beta",
-    "author": "Fuchs",
-    "license": "MIT",
-    "site": "https://day-2-day.info/isekai/",
-    "repo": "https://github.com/Fuchs/IsekaiSimu",
-    "generated_at": "ISO8601",
-    "build_id": "fnv1a-hash"
-  }
-}
-```
-
----
-
-## 🗂️ ファイル構成
-
-```
-/isekai/
-├ index.html   # UI
-├ style.css    # スタイル
-├ events.js    # イベント定義（データのみ）
-└ app.js       # シミュレーションロジック
-```
-
----
-
-## 📜 ライセンス
-
-MIT License  
-Copyright (c) 2026 Fuchs / 日々綴  
-
-商用・改変・再配布は自由ですが、  
-著作権表示およびライセンス表記は保持してください。
-
----
-
-## 🔗 Links
-
-- Web: https://day-2-day.info/isekai/
-- Terms: https://day-2-day.info/isekai-terms/
-- GitHub: https://github.com/Fuchs/IsekaiSimu
+MIT License
