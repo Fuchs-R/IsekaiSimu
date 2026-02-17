@@ -89,6 +89,7 @@
   const els = {
     stats: document.getElementById("stats"), totalNow: document.getElementById("totalNow"), years: document.getElementById("years"),
     tone: document.getElementById("tone"), job: document.getElementById("job"), gender: document.getElementById("gender"),
+    comedyLevel: document.getElementById("comedyLevel"),
     xMode: document.getElementById("xMode"), xTag: document.getElementById("xTag"), cheats: document.getElementById("cheats"),
     cheatMsg: document.getElementById("cheatMsg"), btnGenerate: document.getElementById("btnGenerate"), btnCopy: document.getElementById("btnCopy"),
     btnReroll: document.getElementById("btnReroll"), seedView: document.getElementById("seedView"), promptBox: document.getElementById("promptBox"),
@@ -274,6 +275,9 @@
           inner: [...new Set([...(ev.micro && ev.micro.inner || []), ...(extraMicro && extraMicro.inner || [])])],
           beat: [...new Set([...(ev.micro && ev.micro.beat || [])])]
         },
+        humor: typeof ev.humor === "number" ? ev.humor : 0,
+        gag: ev.gag || [],
+        punch: ev.punch || [],
         gain: delta,
         text: line,
         score: importance(ev, outcomeKey, delta)
@@ -296,10 +300,26 @@
   }
 
   function makePrompt(sim, build) {
+    const isComedyMode = build.tone === "コメディ" || sim.tags.tone_bias === "comedy";
+    const comedyLevel = clamp(Number(build.comedy_level) || 0, 0, 3);
+    const heavyComedyWords = ["喪失", "絶望", "悲嘆", "崩壊", "終焉", "死別", "戦争", "疫病"];
+    const heavyScore = (h) => [...(h.emotion || []), ...(h.tags || [])].reduce((n, w) => n + (heavyComedyWords.some(t => w.includes(t)) ? 1 : 0), 0);
+    const pickCoreHighlight = () => {
+      const transitions = sim.highlights.filter(h => h.impact === "転機");
+      const base = transitions.length ? transitions : sim.highlights;
+      if (!base.length) return null;
+      if (!isComedyMode) return base[0];
+      return [...base].sort((a, b) => {
+        const sa = (a.humor || 0) * 5 - heavyScore(a) * 4;
+        const sb = (b.humor || 0) * 5 - heavyScore(b) * 4;
+        return sb - sa;
+      })[0];
+    };
+
     const payload = {
       meta: { generator: GENERATOR_NAME, version: VERSION, author: AUTHOR, license: LICENSE, site: SITE_URL, repo: REPO_URL, generated_at: nowISO(), build_id: fnv1a(JSON.stringify(build)) },
-      build: { seed: sim.seed, years: sim.years, tone: sim.tone, gender: sim.gender, job: sim.job, cheats: sim.cheats, stats: sim.stats_final, flags: sim.flags },
-      highlights: sim.highlights.map(h => ({ year: h.year, eventId: h.eventId, name: h.name, impact: h.impact, outcomeKey: h.outcomeKey, emotion: h.emotion, tags: h.tags, micro: h.micro, gain: h.gain })),
+      build: { seed: sim.seed, years: sim.years, tone: sim.tone, gender: sim.gender, job: sim.job, comedy_level: comedyLevel, cheats: sim.cheats, stats: sim.stats_final, flags: sim.flags },
+      highlights: sim.highlights.map(h => ({ year: h.year, eventId: h.eventId, name: h.name, impact: h.impact, outcomeKey: h.outcomeKey, emotion: h.emotion, tags: h.tags, micro: h.micro, humor: h.humor, gag: h.gag, punch: h.punch, gain: h.gain })),
       outcome: sim.outcome, tags: sim.tags
     };
 
@@ -311,13 +331,30 @@
     ];
 
     if (build.x_mode) {
-      const core = sim.highlights.find(h => h.impact === "転機") || sim.highlights[0];
-      const xHint = core ? `転機候補: ${core.name} (${[...core.emotion, ...core.tags].slice(0, 3).join("/")})` : "転機候補なし";
+      const core = pickCoreHighlight();
+      const xHint = core ? `転機候補: ${core.name} (${[...core.emotion, ...core.tags, ...(core.gag || []), ...(core.punch || [])].slice(0, 5).join("/")})` : "転機候補なし";
+      rules.push("5) 最後に「X投稿用（140文字以内）」見出しを付け、140文字以内の本文を1本だけ出力。");
+      if (isComedyMode) {
+        rules.push(
+          "   - 1文目=状況、2文目=ズレ、最後=必ずオチ（ツッコミ/皮肉/落差）で締める",
+          "   - highlights の impact=転機 を優先し、重すぎる語（喪失/絶望など）が強い候補は回避する",
+          "   - core に humor/gag/punch があれば優先使用し、micro.inner/motifs はツッコミ化の言い換え可",
+          "   - 余韻で締める・ポエム調抽象語（証/前進/深く安堵など）多用は禁止",
+          "   - 数値列挙・結果報告調・固有名詞の乱用は禁止",
+          "   - 誹謗中傷・差別・過激表現は禁止"
+        );
+        if (comedyLevel === 1) rules.push("   - comedy_level=1: ズレ必須。オチは弱めでも可");
+        if (comedyLevel === 2) rules.push("   - comedy_level=2: オチ必須 + ツッコミ必須 + 現代語を1つ入れる");
+        if (comedyLevel === 3) rules.push("   - comedy_level=3: オチ必須。メタ発言を1つだけ許可（例: 異世界なのに◯◯ / 作者の都合）");
+      } else {
+        rules.push(
+          "   - highlights の impact=転機 を優先して核にする",
+          "   - micro.inner / micro.motifs / emotion / tags から情景と余韻を作る",
+          "   - 数値列挙・結果報告調・固有名詞の乱用は禁止"
+        );
+      }
       rules.push(
-        "5) 最後に「X投稿用（140文字以内）」見出しを付け、140文字以内の本文を1本だけ出力。",
-        "   - highlights の impact=転機 を優先して核にする",
-        "   - micro.inner / micro.motifs / emotion / tags から情景と余韻を作る",
-        "   - 数値列挙・結果報告調・固有名詞の乱用は禁止",
+        "   - 140字を超えそうなら、接続詞→形容→文の順で削って圧縮する",
         `   - ${xHint}`
       );
       if (build.x_tag) rules.push("   - 収まる場合のみ末尾に #IsekaiSimu を1つ");
@@ -343,6 +380,7 @@
 
     const build = {
       seed, years: parseInt(els.years.value, 10), tone: els.tone.value, job: els.job.value, gender: els.gender.value,
+      comedy_level: clamp(parseInt(els.comedyLevel && els.comedyLevel.value, 10) || 2, 0, 3),
       x_mode: !!els.xMode.checked, x_tag: !!els.xTag.checked, cheats: getSelectedCheats(), stats: { ...statState }, flags: {}
     };
 

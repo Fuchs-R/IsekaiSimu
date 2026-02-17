@@ -1,5 +1,16 @@
 # IsekaiSimu — 更新履歴（CHANGELOG）
 
+## v0.3-beta+comedy
+### Added
+- UI に `comedy_level`（0〜3, default:2）を追加
+- events 任意フィールド `humor` / `gag` / `punch` を追加（後方互換）
+
+### Changed
+- X 140字ルールをコメディ分岐化（tone=コメディ or tone_bias=comedy）
+- コメディ時は「状況→ズレ→オチ」固定、余韻締め禁止、ツッコミ必須条件を段階化
+- コア転機選定を改善（重すぎる語を回避しつつ humor 高値を優先）
+- 140字超過時の圧縮優先順（接続詞→形容→文短縮）を明示
+
 ## v0.3-beta
 ### Added
 - 全イベントを 0.3 スキーマ化（id / emotion / impact / tags / outcomes / flags / micro）
