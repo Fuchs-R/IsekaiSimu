@@ -90,7 +90,7 @@
     stats: document.getElementById("stats"), totalNow: document.getElementById("totalNow"), years: document.getElementById("years"),
     tone: document.getElementById("tone"), job: document.getElementById("job"), gender: document.getElementById("gender"),
     comedyLevel: document.getElementById("comedyLevel"),
-    xMode: document.getElementById("xMode"), xTag: document.getElementById("xTag"), cheats: document.getElementById("cheats"),
+    xMode: document.getElementById("xMode"), xTag: document.getElementById("xTag"), xStyle: document.getElementById("xStyle"), cheats: document.getElementById("cheats"),
     cheatMsg: document.getElementById("cheatMsg"), btnGenerate: document.getElementById("btnGenerate"), btnCopy: document.getElementById("btnCopy"),
     btnReroll: document.getElementById("btnReroll"), seedView: document.getElementById("seedView"), promptBox: document.getElementById("promptBox"),
     copyMsg: document.getElementById("copyMsg"), hiBox: document.getElementById("hiBox"), timelineBox: document.getElementById("timelineBox"),
@@ -300,25 +300,30 @@
   }
 
   function makePrompt(sim, build) {
-    const isComedyMode = build.tone === "コメディ" || sim.tags.tone_bias === "comedy";
+    const xStyle = ["literary", "subtle", "absurd"].includes(build.x_style) ? build.x_style : "subtle";
+    const isComedyMode = xStyle !== "literary";
     const comedyLevel = clamp(Number(build.comedy_level) || 0, 0, 3);
     const heavyComedyWords = ["喪失", "絶望", "悲嘆", "崩壊", "終焉", "死別", "戦争", "疫病"];
     const heavyScore = (h) => [...(h.emotion || []), ...(h.tags || [])].reduce((n, w) => n + (heavyComedyWords.some(t => w.includes(t)) ? 1 : 0), 0);
+    const coreFeatureScore = (h) => {
+      const microCount = (h.micro && ((h.micro.motifs || []).length + (h.micro.inner || []).length + (h.micro.beat || []).length)) || 0;
+      return microCount + (h.tags || []).length;
+    };
     const pickCoreHighlight = () => {
       const transitions = sim.highlights.filter(h => h.impact === "転機");
       const base = transitions.length ? transitions : sim.highlights;
       if (!base.length) return null;
-      if (!isComedyMode) return base[0];
+      if (xStyle === "literary") return base[0];
       return [...base].sort((a, b) => {
-        const sa = (a.humor || 0) * 5 - heavyScore(a) * 4;
-        const sb = (b.humor || 0) * 5 - heavyScore(b) * 4;
+        const sa = (a.humor || 0) * 6 + coreFeatureScore(a) * 2 - heavyScore(a) * 5 + (a.impact === "転機" ? 3 : 0);
+        const sb = (b.humor || 0) * 6 + coreFeatureScore(b) * 2 - heavyScore(b) * 5 + (b.impact === "転機" ? 3 : 0);
         return sb - sa;
       })[0];
     };
 
     const payload = {
       meta: { generator: GENERATOR_NAME, version: VERSION, author: AUTHOR, license: LICENSE, site: SITE_URL, repo: REPO_URL, generated_at: nowISO(), build_id: fnv1a(JSON.stringify(build)) },
-      build: { seed: sim.seed, years: sim.years, tone: sim.tone, gender: sim.gender, job: sim.job, comedy_level: comedyLevel, cheats: sim.cheats, stats: sim.stats_final, flags: sim.flags },
+      build: { seed: sim.seed, years: sim.years, tone: sim.tone, gender: sim.gender, job: sim.job, comedy_level: comedyLevel, x_style: xStyle, cheats: sim.cheats, stats: sim.stats_final, flags: sim.flags },
       highlights: sim.highlights.map(h => ({ year: h.year, eventId: h.eventId, name: h.name, impact: h.impact, outcomeKey: h.outcomeKey, emotion: h.emotion, tags: h.tags, micro: h.micro, humor: h.humor, gag: h.gag, punch: h.punch, gain: h.gain })),
       outcome: sim.outcome, tags: sim.tags
     };
@@ -333,30 +338,45 @@
     if (build.x_mode) {
       const core = pickCoreHighlight();
       const xHint = core ? `転機候補: ${core.name} (${[...core.emotion, ...core.tags, ...(core.gag || []), ...(core.punch || [])].slice(0, 5).join("/")})` : "転機候補なし";
+      const corePolicyHint = xStyle === "literary"
+        ? "核イベントは impact=転機 を優先し、世界観から余韻へ流す。"
+        : "核イベントは impact=転機 を基本にしつつ、重すぎる語（喪失/絶望など）が強い候補は回避し、micro/tags が豊富な候補や humor が高い候補を優先する。";
       rules.push("5) 最後に「X投稿用（140文字以内）」見出しを付け、140文字以内の本文を1本だけ出力。");
-      if (isComedyMode) {
+      rules.push(
+        "   - 140字以内は厳守。超えそうなら接続詞→形容詞→前置きの順に削って圧縮する",
+        "   - 数値列挙・結果報告調・固有名詞の乱用は禁止",
+        `   - ${corePolicyHint}`,
+        "   - オチ/反転/余韻のいずれかで必ず締める"
+      );
+      if (xStyle === "literary") {
         rules.push(
-          "   - 1文目=状況、2文目=ズレ、最後=必ずオチ（ツッコミ/皮肉/落差）で締める",
-          "   - highlights の impact=転機 を優先し、重すぎる語（喪失/絶望など）が強い候補は回避する",
-          "   - core に humor/gag/punch があれば優先使用し、micro.inner/motifs はツッコミ化の言い換え可",
-          "   - 余韻で締める・ポエム調抽象語（証/前進/深く安堵など）多用は禁止",
-          "   - 数値列挙・結果報告調・固有名詞の乱用は禁止",
-          "   - 誹謗中傷・差別・過激表現は禁止"
+          "   - 140字小説として成立させる。構造は世界観提示→進行→余韻",
+          "   - 文体はやや硬め可。抽象語は過剰にしない",
+          "   - 改行は0〜1回まで。説明調は禁止",
+          "   - 余韻で締める"
         );
-        if (comedyLevel === 1) rules.push("   - comedy_level=1: ズレ必須。オチは弱めでも可");
-        if (comedyLevel === 2) rules.push("   - comedy_level=2: オチ必須 + ツッコミ必須 + 現代語を1つ入れる");
-        if (comedyLevel === 3) rules.push("   - comedy_level=3: オチ必須。メタ発言を1つだけ許可（例: 異世界なのに◯◯ / 作者の都合）");
+      } else if (xStyle === "subtle") {
+        rules.push(
+          "   - 構造は世界観提示→進行→静かな反転（意味/役割/価値の反転）",
+          "   - 文体は真面目に保つ。ツッコミ口調禁止",
+          "   - 最後の一文で静かな反転を作る。説明で終わらない",
+          "   - 余韻は残してよいが、意味はズラす",
+          "   - 改行は0〜2回まで。詩っぽくしすぎない",
+          "   - 型の参考: 「〜のはずだった。だが〜している。私は〜に向いていたらしい。」",
+          "   - 型の参考: 「勝った。けれど、誇れるのは別のことだった。」"
+        );
       } else {
         rules.push(
-          "   - highlights の impact=転機 を優先して核にする",
-          "   - micro.inner / micro.motifs / emotion / tags から情景と余韻を作る",
-          "   - 数値列挙・結果報告調・固有名詞の乱用は禁止"
+          "   - 構造は普通→ズレ→一撃オチ",
+          "   - 3〜5行の短文改行を使う",
+          "   - 現代語を1つ必須で入れる（例: WLB/ガチ/詰み/業者/現場猫）",
+          "   - メタ表現は1つまで（作者/仕様/異世界テンプレ等）",
+          "   - 最後は一撃で落とす。余韻で終わらない",
+          "   - 文体は軽め可、ツッコミ可。誹謗中傷・差別・過激表現は禁止"
         );
       }
-      rules.push(
-        "   - 140字を超えそうなら、接続詞→形容→文の順で削って圧縮する",
-        `   - ${xHint}`
-      );
+      if (isComedyMode && comedyLevel === 3) rules.push("   - comedy_level=3: 強いズレやメタの使用を優先してよい（ただしメタは1つまで）");
+      rules.push(`   - ${xHint}`);
       if (build.x_tag) rules.push("   - 収まる場合のみ末尾に #IsekaiSimu を1つ");
     }
 
@@ -381,7 +401,7 @@
     const build = {
       seed, years: parseInt(els.years.value, 10), tone: els.tone.value, job: els.job.value, gender: els.gender.value,
       comedy_level: clamp(parseInt(els.comedyLevel && els.comedyLevel.value, 10) || 2, 0, 3),
-      x_mode: !!els.xMode.checked, x_tag: !!els.xTag.checked, cheats: getSelectedCheats(), stats: { ...statState }, flags: {}
+      x_mode: !!els.xMode.checked, x_tag: !!els.xTag.checked, x_style: (els.xStyle && els.xStyle.value) || "subtle", cheats: getSelectedCheats(), stats: { ...statState }, flags: {}
     };
 
     const sim = simulate(build);

@@ -1,5 +1,14 @@
 # IsekaiSimu — 更新履歴（CHANGELOG）
 
+## v0.3-beta+x-style
+### Added
+- X style modes `x_style`（`literary` / `subtle` / `absurd`、default: `subtle`）を追加
+
+### Changed
+- X生成ルールを tone 主導から style 主導へ変更（`x_style` を最優先）
+- X向けコア転機選定を改善（subtle/absurd では重すぎる素材を回避し、humor/micro/tagsを優先）
+- X本文指示を 140字小説仕様へ再設計（文学/静かなコメディ/バズ狙いを明示分岐）
+
 ## v0.3-beta+comedy
 ### Added
 - UI に `comedy_level`（0〜3, default:2）を追加
