@@ -7,6 +7,20 @@
 IsekaiSimu はブラウザだけで動作する異世界転生シミュレーターです。  
 シミュレーション結果（JSON）をAIに渡し、AIは物語化のみを担当します。API連携は行いません。
 
+## v0.4-beta の要点
+
+- `perception_arc` を追加（`mislabel_arc` / `delayed_realization` / `inverted_reward`）
+  - 出来事分岐を増やさず、AI向け素材レイヤとして payload に追加
+  - 状態は `id` / `phase` / `lens` / `release_rule` の軽量構成
+- build に `perception_mode` / `perception_arc` を追加（default: `auto`）
+  - `auto` は job 傾向（`arc_bias`）で選定
+  - `manual` は `build.perception_arc` 指定を優先（UI未追加でも後方互換で利用可）
+- JOBS に認識傾向を最小追加
+  - `arc_bias`（弱い重み差）と `lens_pool`（職業ごとの見出し語候補）
+- X `subtle` 指示を強化
+  - 必須構造を「出来事 → 認識 → 空気が抜ける」に固定
+  - 最後の一文を `perception_arc.lens` / `release_rule` 語で締める制約を追加
+
 ## v0.3-beta の要点
 
 - `events.js` を 0.3 スキーマへ統一

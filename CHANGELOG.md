@@ -1,5 +1,16 @@
 # IsekaiSimu — 更新履歴（CHANGELOG）
 
+## v0.4-beta
+### Added
+- build に `perception_mode`（default: `auto`）と `perception_arc` を追加（後方互換で内部対応）
+- prompt payload に軽量 `perception_arc`（`id` / `phase` / `lens` / `release_rule`）を追加
+- JOBS に `arc_bias` / `lens_pool` を追加し、職業ごとの認識傾向を導入
+
+### Changed
+- VERSION を `0.4-beta` に更新
+- X `subtle` ルールを強化（必須構造: 「出来事 → 認識 → 空気が抜ける」）
+- X `subtle` の締めを `perception_arc.lens` または `release_rule` 語で終える要件を追加
+
 ## v0.3-beta+x-style
 ### Added
 - X style modes `x_style`（`literary` / `subtle` / `absurd`、default: `subtle`）を追加

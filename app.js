@@ -3,7 +3,7 @@
  */
 (function () {
   const GENERATOR_NAME = "IsekaiSimu";
-  const VERSION = "0.3-beta";
+  const VERSION = "0.4-beta";
   const AUTHOR = "Fuchs";
   const SITE_URL = "https://day-2-day.info/isekai/";
   const REPO_URL = "https://github.com/Fuchs-R/IsekaiSimu";
@@ -14,62 +14,90 @@
       label: "冒険者",
       tone_bias: "neutral",
       event_bias: { adventure: 1.08, disaster: 1.04 },
-      stat_bias: { STR: 1.2, VIT: 1.1, DEX: 1.0, LUK: 1.0, MAG: 0.9, INT: 0.9 }
+      stat_bias: { STR: 1.2, VIT: 1.1, DEX: 1.0, LUK: 1.0, MAG: 0.9, INT: 0.9 },
+      arc_bias: { mislabel_arc: 1.0, delayed_realization: 1.05, inverted_reward: 1.0 },
+      lens_pool: ["任務", "生存", "鍛錬", "収支"]
     },
     farmer: {
       label: "農民",
       tone_bias: "neutral",
       event_bias: { life: 1.1, disaster: 0.95 },
-      stat_bias: { VIT: 1.2, DEX: 1.1, INT: 1.0, LUK: 1.0, STR: 0.9, MAG: 0.8 }
+      stat_bias: { VIT: 1.2, DEX: 1.1, INT: 1.0, LUK: 1.0, STR: 0.9, MAG: 0.8 },
+      arc_bias: { mislabel_arc: 1.05, delayed_realization: 1.0, inverted_reward: 0.95 },
+      lens_pool: ["収穫", "天候", "段取り", "暮らし"]
     },
     blacksmith: {
       label: "鍛冶師",
       tone_bias: "serious",
       event_bias: { life: 1.08 },
-      stat_bias: { DEX: 1.25, INT: 1.0, VIT: 1.0, STR: 0.95, LUK: 0.9, MAG: 0.8 }
+      stat_bias: { DEX: 1.25, INT: 1.0, VIT: 1.0, STR: 0.95, LUK: 0.9, MAG: 0.8 },
+      arc_bias: { mislabel_arc: 0.9, delayed_realization: 1.25, inverted_reward: 1.15 },
+      lens_pool: ["焼入れ", "規格", "納期", "責任"]
     },
     merchant: {
       label: "商人",
       tone_bias: "neutral",
       event_bias: { life: 1.06, relations: 1.06 },
-      stat_bias: { INT: 1.25, LUK: 1.15, DEX: 1.0, VIT: 0.9, STR: 0.8, MAG: 0.8 }
+      stat_bias: { INT: 1.25, LUK: 1.15, DEX: 1.0, VIT: 0.9, STR: 0.8, MAG: 0.8 },
+      arc_bias: { mislabel_arc: 1.1, delayed_realization: 0.95, inverted_reward: 1.05 },
+      lens_pool: ["利幅", "信用", "回転", "交渉"]
     },
     researcher: {
       label: "研究者",
       tone_bias: "serious",
       event_bias: { life: 1.06, disaster: 0.94 },
-      stat_bias: { INT: 1.3, MAG: 1.15, LUK: 1.0, DEX: 0.9, VIT: 0.85, STR: 0.7 }
+      stat_bias: { INT: 1.3, MAG: 1.15, LUK: 1.0, DEX: 0.9, VIT: 0.85, STR: 0.7 },
+      arc_bias: { mislabel_arc: 0.85, delayed_realization: 1.25, inverted_reward: 1.2 },
+      lens_pool: ["仮説", "検証", "誤差", "再現"]
     },
     traveler: {
       label: "旅人",
       tone_bias: "neutral",
       event_bias: { relations: 1.08, adventure: 1.04 },
-      stat_bias: { LUK: 1.25, DEX: 1.05, INT: 1.0, VIT: 0.95, STR: 0.9, MAG: 0.9 }
+      stat_bias: { LUK: 1.25, DEX: 1.05, INT: 1.0, VIT: 0.95, STR: 0.9, MAG: 0.9 },
+      arc_bias: { mislabel_arc: 1.05, delayed_realization: 1.0, inverted_reward: 1.0 },
+      lens_pool: ["行程", "寄り道", "天候", "縁"]
     },
     dungeon_cleaner: {
       label: "ダンジョン清掃員",
       tone_bias: "comedy",
       event_bias: { adventure: 1.07, disaster: 0.92 },
-      stat_bias: { VIT: 1.15, DEX: 1.1, LUK: 1.05, STR: 0.95, INT: 0.95, MAG: 0.85 }
+      stat_bias: { VIT: 1.15, DEX: 1.1, LUK: 1.05, STR: 0.95, INT: 0.95, MAG: 0.85 },
+      arc_bias: { mislabel_arc: 1.25, delayed_realization: 0.85, inverted_reward: 0.95 },
+      lens_pool: ["清掃", "点検", "報告", "動線"]
     },
     isekai_convenience_clerk: {
       label: "異世界コンビニ店員",
       tone_bias: "comedy",
       event_bias: { life: 1.08, relations: 1.06 },
-      stat_bias: { INT: 1.15, DEX: 1.1, LUK: 1.1, VIT: 0.95, STR: 0.85, MAG: 0.85 }
+      stat_bias: { INT: 1.15, DEX: 1.1, LUK: 1.1, VIT: 0.95, STR: 0.85, MAG: 0.85 },
+      arc_bias: { mislabel_arc: 1.25, delayed_realization: 0.85, inverted_reward: 0.9 },
+      lens_pool: ["接客", "在庫", "発注", "マニュアル"]
     },
     self_proclaimed_strategist: {
       label: "村の自称軍師",
       tone_bias: "comedy",
       event_bias: { relations: 1.1, disaster: 1.04 },
-      stat_bias: { INT: 1.2, LUK: 1.1, DEX: 1.0, VIT: 0.9, STR: 0.85, MAG: 0.95 }
+      stat_bias: { INT: 1.2, LUK: 1.1, DEX: 1.0, VIT: 0.9, STR: 0.85, MAG: 0.95 },
+      arc_bias: { mislabel_arc: 1.2, delayed_realization: 0.95, inverted_reward: 0.9 },
+      lens_pool: ["布陣", "読解", "想定", "進言"]
     },
     wandering_bard: {
       label: "放浪詩人",
       tone_bias: "serious",
       event_bias: { relations: 1.1, life: 1.05 },
-      stat_bias: { LUK: 1.2, INT: 1.1, DEX: 1.0, MAG: 0.95, VIT: 0.9, STR: 0.85 }
+      stat_bias: { LUK: 1.2, INT: 1.1, DEX: 1.0, MAG: 0.95, VIT: 0.9, STR: 0.85 },
+      arc_bias: { mislabel_arc: 1.05, delayed_realization: 1.15, inverted_reward: 0.95 },
+      lens_pool: ["余韻", "拍", "寓意", "祈り"]
     }
+  };
+
+  const DEFAULT_ARC_BIAS = { mislabel_arc: 1.0, delayed_realization: 1.0, inverted_reward: 1.0 };
+  const DEFAULT_LENS_POOL = ["使命", "段取り", "意味", "余白"];
+  const PERCEPTION_ARC_MAP = {
+    mislabel_arc: { release_rule: "late_unlabel", fallback_lens: ["手順", "分類", "報告", "誤配"] },
+    delayed_realization: { release_rule: "late_meaning", fallback_lens: ["予兆", "伏線", "理解", "遅延"] },
+    inverted_reward: { release_rule: "reward_flip", fallback_lens: ["報酬", "対価", "帳尻", "反転"] }
   };
 
   function nowISO() { return new Date().toISOString(); }
@@ -300,6 +328,27 @@
   }
 
   function makePrompt(sim, build) {
+    function makePerceptionArc() {
+      const jobCfg = JOBS[sim.job] || {};
+      const manualArcId = typeof build.perception_arc === "string" ? build.perception_arc : "";
+      const arcIdFromManual = PERCEPTION_ARC_MAP[manualArcId] ? manualArcId : "";
+      const arcBias = jobCfg.arc_bias || DEFAULT_ARC_BIAS;
+      const autoArc = weightedPick(rngFromSeed((sim.seed ^ 0x9e3779b9) >>> 0), Object.keys(PERCEPTION_ARC_MAP).map(id => ({ id, w: arcBias[id] || 1 })), []);
+      const arcId = arcIdFromManual || ((autoArc && autoArc.id) || "mislabel_arc");
+      const arcDef = PERCEPTION_ARC_MAP[arcId] || PERCEPTION_ARC_MAP.mislabel_arc;
+      const pool = Array.isArray(jobCfg.lens_pool) && jobCfg.lens_pool.length ? jobCfg.lens_pool : DEFAULT_LENS_POOL;
+      const lensRng = rngFromSeed((sim.seed ^ fnv1a(`${sim.job}:${arcId}`).split("").reduce((a, c) => (a + c.charCodeAt(0)) >>> 0, 0)) >>> 0);
+      const lensSource = [...pool, ...(arcDef.fallback_lens || [])];
+      const lens = [];
+      const targetLen = Math.min(4, Math.max(2, 2 + Math.floor(lensRng() * 3)));
+      while (lens.length < targetLen && lensSource.length) {
+        const idx = Math.floor(lensRng() * lensSource.length);
+        const w = lensSource.splice(idx, 1)[0];
+        if (!lens.includes(w)) lens.push(w);
+      }
+      return { id: arcId, phase: 2, lens, release_rule: arcDef.release_rule };
+    }
+
     const xStyle = ["literary", "subtle", "absurd"].includes(build.x_style) ? build.x_style : "subtle";
     const isComedyMode = xStyle !== "literary";
     const comedyLevel = clamp(Number(build.comedy_level) || 0, 0, 3);
@@ -321,9 +370,24 @@
       })[0];
     };
 
+    const perceptionArc = makePerceptionArc();
     const payload = {
       meta: { generator: GENERATOR_NAME, version: VERSION, author: AUTHOR, license: LICENSE, site: SITE_URL, repo: REPO_URL, generated_at: nowISO(), build_id: fnv1a(JSON.stringify(build)) },
-      build: { seed: sim.seed, years: sim.years, tone: sim.tone, gender: sim.gender, job: sim.job, comedy_level: comedyLevel, x_style: xStyle, cheats: sim.cheats, stats: sim.stats_final, flags: sim.flags },
+      build: {
+        seed: sim.seed,
+        years: sim.years,
+        tone: sim.tone,
+        gender: sim.gender,
+        job: sim.job,
+        comedy_level: comedyLevel,
+        x_style: xStyle,
+        perception_mode: build.perception_mode === "manual" ? "manual" : "auto",
+        perception_arc: build.perception_arc || "",
+        cheats: sim.cheats,
+        stats: sim.stats_final,
+        flags: sim.flags
+      },
+      perception_arc: perceptionArc,
       highlights: sim.highlights.map(h => ({ year: h.year, eventId: h.eventId, name: h.name, impact: h.impact, outcomeKey: h.outcomeKey, emotion: h.emotion, tags: h.tags, micro: h.micro, humor: h.humor, gag: h.gag, punch: h.punch, gain: h.gain })),
       outcome: sim.outcome, tags: sim.tags
     };
@@ -358,10 +422,13 @@
       } else if (xStyle === "subtle") {
         rules.push(
           "   - 140字小説として成立させる（説明文/解説文で終わらない）",
-          "   - 構造は必ず4段: ①状況提示（真面目に）→②事実提示（異世界の出来事）→③主人公の認識（論理は一貫して正しい）→④静かな締め（余韻可。ただし意味がわずかに反転）",
+          "   - 構造は必ず『出来事 → 認識 → 空気が抜ける』を含む流れにする（出来事の羅列で終わらない）",
+          "   - 4段の目安: ①状況提示（真面目に）→②事実提示（異世界の出来事）→③主人公の認識（論理は一貫して正しい）→④静かな締め（余韻可。ただし意味がわずかに反転）",
           "   - ズレは“前提”または“評価軸”のどちらか1点だけに絞る",
           "   - 主人公は終始まじめ。叫ばない。大声で落とさない",
           "   - 禁止: ツッコミ口調（「〜だろ」「なんで」「知るか」等）／メタ（作者・仕様・テンプレ等）／現代語の露骨な混入（WLB/ガチ/詰み/現場猫 等）／「！」の多用（原則使わない）",
+          "   - 最後の一文は必ず perception_arc.lens または perception_arc.release_rule の語で終える",
+          "   - 解説しない。ツッコミ禁止・メタ禁止を維持する",
           "   - 会話文を入れるなら1行だけ、短く、弱いトーン（必須ではない）",
           "   - highlights の impact=転機 を核にし、micro/emotion/tags は素材として使う（説明化しない）",
           "   - 型の参考: 「祝福を受けた朝、役目だけが静かに増えた。」",
@@ -403,7 +470,9 @@
     const build = {
       seed, years: parseInt(els.years.value, 10), tone: els.tone.value, job: els.job.value, gender: els.gender.value,
       comedy_level: clamp(parseInt(els.comedyLevel && els.comedyLevel.value, 10) || 2, 0, 3),
-      x_mode: !!els.xMode.checked, x_tag: !!els.xTag.checked, x_style: (els.xStyle && els.xStyle.value) || "subtle", cheats: getSelectedCheats(), stats: { ...statState }, flags: {}
+      x_mode: !!els.xMode.checked, x_tag: !!els.xTag.checked, x_style: (els.xStyle && els.xStyle.value) || "subtle",
+      perception_mode: "auto", perception_arc: "",
+      cheats: getSelectedCheats(), stats: { ...statState }, flags: {}
     };
 
     const sim = simulate(build);
